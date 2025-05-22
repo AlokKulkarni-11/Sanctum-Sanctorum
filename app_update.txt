@@ -14,20 +14,18 @@ import LoginForm from './components/LoginForm';
 function App() {
   const [entries, setEntries] = useState([]);
   const [showEntryForm, setShowEntryForm] = useState(false);
+  const [selectedItemType, setSelectedItemType] = useState('note');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedItemType, ] = useState('note');
   const [filterType, setFilterType] = useState('all');
   const [user, setUser] = useState(null);
   const [showLogin, setShowLogin] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session) {
-        fetchEntries(session.user.id);
-      }
-    });
+    // Check active session on mount
+    const session = supabase.auth.session();
+    setUser(session?.user ?? null);
 
+    // Listen for auth changes
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (!session) {
@@ -37,8 +35,12 @@ function App() {
       }
     });
 
+    if (session) {
+      fetchEntries(session.user.id);
+    }
+
     return () => {
-      authListener.subscription.unsubscribe();
+      authListener.unsubscribe();
     };
   }, []);
 
@@ -121,20 +123,10 @@ function App() {
   };
 
   const handleLogin = async (email, password) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signIn({ email, password });
     if (error) {
       alert('Login failed: ' + error.message);
     } else {
-      setShowLogin(false);
-    }
-  };
-
-  const handleRegister = async (email, password) => {
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) {
-      alert('Registration failed: ' + error.message);
-    } else {
-      alert('Registration successful! Please check your email to confirm your account.');
       setShowLogin(false);
     }
   };
@@ -183,7 +175,7 @@ function App() {
                 onClick={() => setShowEntryForm(true)}
                 style={{ marginBottom: 'var(--spacing-4)' }}
                 disabled={!user}
-                title={user ? 'Add new item' : 'You need to login to add items'}
+                title={user ? 'Add new item' : 'Login to add items'}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="btn-icon" width="16" height="16">
                   <line x1="12" y1="5" x2="12" y2="19" />
@@ -203,7 +195,7 @@ function App() {
         
         <Footer />
         
-        {showEntryForm && user && (
+        {showEntryForm && (
           <EntryForm
             onSubmit={handleAddEntry}
             onCancel={() => setShowEntryForm(false)}
@@ -214,7 +206,6 @@ function App() {
         {showLogin && (
           <LoginForm
             onLogin={handleLogin}
-            onRegister={handleRegister}
             onCancel={() => setShowLogin(false)}
           />
         )}

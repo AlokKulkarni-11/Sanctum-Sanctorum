@@ -15,7 +15,6 @@ function App() {
   const [entries, setEntries] = useState([]);
   const [showEntryForm, setShowEntryForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedItemType, ] = useState('note');
   const [filterType, setFilterType] = useState('all');
   const [user, setUser] = useState(null);
   const [showLogin, setShowLogin] = useState(false);
